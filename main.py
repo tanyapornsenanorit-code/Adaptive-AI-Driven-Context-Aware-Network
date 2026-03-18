@@ -7,7 +7,7 @@ import random
 st.set_page_config(page_title="AI Network & Privacy Dashboard", layout="wide")
 
 st.title("🧠 Adaptive AI Network & Privacy Control Center")
-st.markdown("ระบบจำลองเครือข่ายอัจฉริยะพร้อมการวิเคราะห์บริบทแบบ Real-time")
+st.markdown("ระบบจำลองเครือข่ายอัจฉริยะพร้อมการวิเคราะห์บริบทแบบ Real-time (Sprint 4: Optimization Logic)")
 
 # --- 1. Sidebar: การตั้งค่าระบบ ---
 st.sidebar.header("🛠 การตั้งค่าระบบ")
@@ -28,35 +28,34 @@ mock_users = ["User_Alice", "User_Bob", "User_Charlie", "User_David", "User_Eve"
 
 # --- 3. Improved Adaptive AI Logic (Context-Aware Optimization) ---
 def calculate_ai_decision(users, scenario):
-    """
-    จำลองการตัดสินใจของ AI โดยคำนวณจาก Load Factor และ Priority ของแต่ละบริบท
-    """
     # กำหนดค่าคงที่ตามบริบท (Contextual Constraints)
     if scenario == "Emergency":
-        priority_weight = 2.5  # ความสำคัญสูงพิเศษ
-        capacity_threshold = 200 # เกณฑ์ที่เริ่มหนาแน่น (ต่ำกว่าปกติเพื่อความไว)
+        priority_weight = 2.5  
+        capacity_threshold = 200 
     elif scenario == "Smart Stadium":
-        priority_weight = 1.2  # ความสำคัญปานกลาง
-        capacity_threshold = 1000 # รองรับความหนาแน่นสูง
+        priority_weight = 1.2  
+        capacity_threshold = 1000 
     else: # Smart Campus
-        priority_weight = 1.0  # สถานะปกติ
-        capacity_threshold = 500 # เกณฑ์มาตรฐาน
+        priority_weight = 1.0  
+        capacity_threshold = 500 
 
-    # คำนวณ Load Ratio (0.0 - 1.0+)
+    # คำนวณ Load Ratio
     load_ratio = users / capacity_threshold
     
-    # Adaptive Bandwidth Formula: BW = Base * Load * Priority
-    # ปรับจูนทรัพยากรตามความหนาแน่นและลำดับความสำคัญ
+    # Adaptive Bandwidth Formula: Base * Load * Priority
     base_bw = 150 
     allocated_bw = int(base_bw * load_ratio * priority_weight)
     
     # กำหนดขอบเขตความปลอดภัย (Optimization Boundaries)
     allocated_bw = max(100, min(allocated_bw, 1500))
 
-    # วิเคราะห์สถานะและเหตุผลของ AI (Explainable AI - XAI)
+    # จำลองค่าดั้งเดิม (Baseline) เพื่อใช้เปรียบเทียบ
+    baseline_bw = int(base_bw * priority_weight) * 2
+
+    # วิเคราะห์สถานะและเหตุผลของ AI (XAI)
     if scenario == "Emergency":
         status = "🚨 CRITICAL"
-        reason = f"AI มอบลำดับความสำคัญสูงสุดให้กู้ภัย จัดสรร Bandwidth {allocated_bw} Mbps"
+        reason = f"AI มอบลำดับความสำคัญสูงสุด จัดสรร Bandwidth {allocated_bw} Mbps"
     elif load_ratio > 0.85:
         status = "🔥 HIGH LOAD"
         reason = f"AI ตรวจพบความหนาแน่น {int(load_ratio*100)}% จึงขยายช่องสัญญาณเพื่อลด Latency"
@@ -64,7 +63,7 @@ def calculate_ai_decision(users, scenario):
         status = "✅ OPTIMIZED"
         reason = "AI อยู่ในโหมดประหยัดพลังงาน จัดสรรทรัพยากรตามปริมาณการใช้งานจริง"
         
-    return status, reason, allocated_bw
+    return status, reason, allocated_bw, baseline_bw
 
 # --- 4. การแสดงผลแบบ Real-time ---
 if 'data_list' not in st.session_state:
@@ -84,7 +83,7 @@ for i in range(100):
             current_user_count = random.randint(20, 450)
 
         # เรียกใช้ AI Logic
-        status, ai_reason, bw = calculate_ai_decision(current_user_count, scenario)
+        status, ai_reason, bw, baseline = calculate_ai_decision(current_user_count, scenario)
         
         if is_manual:
             ai_reason = "⚠️ Manual Override: ระบบ AI ถูกปิดการทำงานโดยผู้ดูแล"
@@ -97,6 +96,23 @@ for i in range(100):
 
         st.info(f"**AI Reasoning:** {ai_reason}")
 
+        # --- ส่วนกราฟเปรียบเทียบ (Bandwidth Optimization Chart) ---
+        st.subheader("📊 Network Bandwidth Optimization (AI vs. Traditional)")
+        
+        # เพิ่มข้อมูลสำหรับเปรียบเทียบเข้าไปในประวัติ
+        st.session_state.data_list.append({
+            "Time": i, 
+            "Users": current_user_count, 
+            "Adaptive AI Bandwidth": bw,
+            "Traditional Bandwidth (Fixed)": baseline
+        })
+        
+        # เก็บข้อมูลย้อนหลัง 20 จุดล่าสุดเพื่อความสวยงาม
+        history_df = pd.DataFrame(st.session_state.data_list).tail(20)
+        
+        # สร้างกราฟแท่งเปรียบเทียบ
+        st.bar_chart(history_df.set_index("Time")[["Adaptive AI Bandwidth", "Traditional Bandwidth (Fixed)"]], color=["#2e765e", "#b0bec5"])
+        
         # --- ส่วนตาราง Live Logs ---
         st.subheader("👥 Live Network Access Logs")
         display_users = []
@@ -107,13 +123,5 @@ for i in range(100):
                 "IP (Pseudo)": "10.0.0.XXX" if is_anonymized else f"10.0.0.{random.randint(2,254)}"
             })
         st.table(pd.DataFrame(display_users))
-
-        # --- ส่วนกราฟประวัติและการปรับตัว ---
-        st.session_state.data_list.append({"Time": i, "Users": current_user_count, "Bandwidth": bw})
-        # เก็บข้อมูลย้อนหลัง 20 จุดล่าสุดเพื่อความสวยงาม
-        history_df = pd.DataFrame(st.session_state.data_list).tail(20)
-        
-        st.subheader("📈 Network Adaptation Analytics")
-        st.line_chart(history_df.set_index("Time"))
         
         time.sleep(1)
