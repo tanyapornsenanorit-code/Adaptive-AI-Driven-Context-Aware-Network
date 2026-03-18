@@ -7,75 +7,113 @@ import random
 st.set_page_config(page_title="AI Network & Privacy Dashboard", layout="wide")
 
 st.title("🧠 Adaptive AI Network & Privacy Control Center")
-st.markdown("ระบบจำลองเครือข่ายอัจฉริยะพร้อมโหมดปกปิดตัวตน")
+st.markdown("ระบบจำลองเครือข่ายอัจฉริยะพร้อมการวิเคราะห์บริบทแบบ Real-time")
 
-# --- 1. Sidebar: เพิ่มปุ่ม Anonymization ---
+# --- 1. Sidebar: การตั้งค่าระบบ ---
 st.sidebar.header("🛠 การตั้งค่าระบบ")
-scenario = st.sidebar.selectbox("เลือกสถานการณ์", ["Smart Campus", "Smart Stadium", "Emergency"])
+scenario = st.sidebar.selectbox("เลือกสถานการณ์ (Scenario)", ["Smart Campus", "Smart Stadium", "Emergency"])
 is_manual = st.sidebar.checkbox("ปิดระบบ AI (Manual Mode)")
 
 st.sidebar.markdown("---")
 st.sidebar.header("🔐 Security & Privacy")
-# ปุ่ม Toggle สำหรับการปกปิดตัวตน
 is_anonymized = st.sidebar.toggle("เปิดโหมดปกปิดตัวตน (Anonymization ON)")
 
-# --- 2. Logic สำหรับการจัดการชื่อผู้ใช้ ---
+# --- 2. Logic สำหรับการปกปิดตัวตน (Privacy) ---
 def process_user_name(name, active):
     if active:
         return "🛡️ Hidden_User_" + str(random.randint(100, 999))
     return name
 
-# รายชื่อผู้ใช้จำลอง
 mock_users = ["User_Alice", "User_Bob", "User_Charlie", "User_David", "User_Eve"]
 
-# --- 3. Logic จำลอง AI Network ---
-def get_network_status(users, scenario):
+# --- 3. Improved Adaptive AI Logic (Context-Aware Optimization) ---
+def calculate_ai_decision(users, scenario):
+    """
+    จำลองการตัดสินใจของ AI โดยคำนวณจาก Load Factor และ Priority ของแต่ละบริบท
+    """
+    # กำหนดค่าคงที่ตามบริบท (Contextual Constraints)
     if scenario == "Emergency":
-        return "CRITICAL", "🚨 โหมดฉุกเฉิน: ให้ความสำคัญกับกู้ภัย", 1000
-    if users > 300:
-        return "HIGH LOAD", "🔥 คนหนาแน่น: ขยายช่องสัญญาณอัตโนมัติ", 500
-    return "NORMAL", "✅ สถานะปกติ: จัดสรรทรัพยากรแบบประหยัดพลังงาน", 100
+        priority_weight = 2.5  # ความสำคัญสูงพิเศษ
+        capacity_threshold = 200 # เกณฑ์ที่เริ่มหนาแน่น (ต่ำกว่าปกติเพื่อความไว)
+    elif scenario == "Smart Stadium":
+        priority_weight = 1.2  # ความสำคัญปานกลาง
+        capacity_threshold = 1000 # รองรับความหนาแน่นสูง
+    else: # Smart Campus
+        priority_weight = 1.0  # สถานะปกติ
+        capacity_threshold = 500 # เกณฑ์มาตรฐาน
 
-# --- 4. ส่วนแสดงผล Real-time ---
+    # คำนวณ Load Ratio (0.0 - 1.0+)
+    load_ratio = users / capacity_threshold
+    
+    # Adaptive Bandwidth Formula: BW = Base * Load * Priority
+    # ปรับจูนทรัพยากรตามความหนาแน่นและลำดับความสำคัญ
+    base_bw = 150 
+    allocated_bw = int(base_bw * load_ratio * priority_weight)
+    
+    # กำหนดขอบเขตความปลอดภัย (Optimization Boundaries)
+    allocated_bw = max(100, min(allocated_bw, 1500))
+
+    # วิเคราะห์สถานะและเหตุผลของ AI (Explainable AI - XAI)
+    if scenario == "Emergency":
+        status = "🚨 CRITICAL"
+        reason = f"AI มอบลำดับความสำคัญสูงสุดให้กู้ภัย จัดสรร Bandwidth {allocated_bw} Mbps"
+    elif load_ratio > 0.85:
+        status = "🔥 HIGH LOAD"
+        reason = f"AI ตรวจพบความหนาแน่น {int(load_ratio*100)}% จึงขยายช่องสัญญาณเพื่อลด Latency"
+    else:
+        status = "✅ OPTIMIZED"
+        reason = "AI อยู่ในโหมดประหยัดพลังงาน จัดสรรทรัพยากรตามปริมาณการใช้งานจริง"
+        
+    return status, reason, allocated_bw
+
+# --- 4. การแสดงผลแบบ Real-time ---
 if 'data_list' not in st.session_state:
     st.session_state.data_list = []
 
 placeholder = st.empty()
 
+# วนลูปจำลองการทำงานของเครือข่าย
 for i in range(100):
     with placeholder.container():
         # สุ่มจำนวนผู้ใช้ตาม Scenario
-        current_user_count = random.randint(300, 800) if scenario == "Smart Stadium" else random.randint(20, 150)
-        status, msg, bw = get_network_status(current_user_count, scenario)
+        if scenario == "Smart Stadium":
+            current_user_count = random.randint(400, 1200)
+        elif scenario == "Emergency":
+            current_user_count = random.randint(50, 150)
+        else:
+            current_user_count = random.randint(20, 450)
+
+        # เรียกใช้ AI Logic
+        status, ai_reason, bw = calculate_ai_decision(current_user_count, scenario)
         
         if is_manual:
-            msg = "⚠️ ควบคุมโดยมนุษย์ (AI ถูกระงับ)"
+            ai_reason = "⚠️ Manual Override: ระบบ AI ถูกปิดการทำงานโดยผู้ดูแล"
 
-        # --- ส่วน Metrics หลัก ---
+        # --- ส่วนแสดง Metrics ---
         c1, c2, c3 = st.columns(3)
-        c1.metric("จำนวนผู้ใช้ทั้งหมด", f"{current_user_count} คน")
-        c2.metric("Bandwidth ที่จัดสรร", f"{bw} Mbps")
-        c3.metric("สถานะความเป็นส่วนตัว", "🔒 ปกปิด" if is_anonymized else "🔓 เปิดเผย")
+        c1.metric("จำนวนผู้ใช้ขณะนี้", f"{current_user_count} User", delta=None)
+        c2.metric("Bandwidth ที่จัดสรร", f"{bw} Mbps", delta=f"{status}")
+        c3.metric("Privacy Mode", "🔒 Protected" if is_anonymized else "🔓 Public")
 
-        st.info(msg)
+        st.info(f"**AI Reasoning:** {ai_reason}")
 
-        # --- ส่วนตารางผู้ใช้ที่เชื่อมต่อ (Privacy Demo) ---
-        st.subheader("👥 ผู้ใช้งานที่กำลังเชื่อมต่อ (Live Access Log)")
+        # --- ส่วนตาราง Live Logs ---
+        st.subheader("👥 Live Network Access Logs")
         display_users = []
         for u in mock_users:
             display_users.append({
                 "User ID": process_user_name(u, is_anonymized),
-                "Status": "Connected",
-                "IP Address": "192.168.1.xxx" if is_anonymized else f"192.168.1.{random.randint(10,99)}"
+                "Access Status": "Active",
+                "IP (Pseudo)": "10.0.0.XXX" if is_anonymized else f"10.0.0.{random.randint(2,254)}"
             })
         st.table(pd.DataFrame(display_users))
 
-        # --- ส่วนกราฟประวัติ ---
+        # --- ส่วนกราฟประวัติและการปรับตัว ---
         st.session_state.data_list.append({"Time": i, "Users": current_user_count, "Bandwidth": bw})
-        history_df = pd.DataFrame(st.session_state.data_list)
+        # เก็บข้อมูลย้อนหลัง 20 จุดล่าสุดเพื่อความสวยงาม
+        history_df = pd.DataFrame(st.session_state.data_list).tail(20)
         
-        if not history_df.empty:
-            st.subheader("📈 กราฟการปรับตัวของเครือข่าย")
-            st.line_chart(history_df.set_index("Time"))
+        st.subheader("📈 Network Adaptation Analytics")
+        st.line_chart(history_df.set_index("Time"))
         
         time.sleep(1)
