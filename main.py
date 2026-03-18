@@ -6,8 +6,16 @@ import random
 # --- ตั้งค่าหน้าจอ ---
 st.set_page_config(page_title="AI Network & Privacy Dashboard", layout="wide")
 
+# เพิ่ม CSS เล็กน้อยเพื่อให้หน้าจอดูเป็นธีม Monitoring มากขึ้น
+st.markdown("""
+<style>
+    .metric-label { font-size: 1.2rem !important; color: #555; }
+    .metric-value { font-size: 2.5rem !important; color: #1f77b4; font-weight: bold; }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🧠 Adaptive AI Network & Privacy Control Center")
-st.markdown("ระบบจำลองเครือข่ายอัจฉริยะพร้อมการวิเคราะห์บริบทแบบ Real-time (Sprint 4: Optimization Logic)")
+st.markdown("ระบบจำลองเครือข่ายอัจฉริยะพร้อมการวิเคราะห์บริบทแบบ Real-time (Sprint 4: Optimization Analysis Final)")
 
 # --- 1. Sidebar: การตั้งค่าระบบ ---
 st.sidebar.header("🛠 การตั้งค่าระบบ")
@@ -49,10 +57,10 @@ def calculate_ai_decision(users, scenario):
     # กำหนดขอบเขตความปลอดภัย (Optimization Boundaries)
     allocated_bw = max(100, min(allocated_bw, 1500))
 
-    # จำลองค่าดั้งเดิม (Baseline) เพื่อใช้เปรียบเทียบ
+    # จำลองค่าดั้งเดิม (Baseline) เพื่อใช้เปรียบเทียบ (แบบ Fixed-High)
     baseline_bw = int(base_bw * priority_weight) * 2
 
-    # วิเคราะห์สถานะและเหตุผลของ AI (XAI)
+    # วิเคราะห์สถานะและเหตุผลของ AI (Explainable AI - XAI)
     if scenario == "Emergency":
         status = "🚨 CRITICAL"
         reason = f"AI มอบลำดับความสำคัญสูงสุด จัดสรร Bandwidth {allocated_bw} Mbps"
@@ -96,10 +104,9 @@ for i in range(100):
 
         st.info(f"**AI Reasoning:** {ai_reason}")
 
-        # --- ส่วนกราฟเปรียบเทียบ (Bandwidth Optimization Chart) ---
-        st.subheader("📊 Network Bandwidth Optimization (AI vs. Traditional)")
+        # --- ส่วนกราฟเปรียบเทียบสวยงามแบบกราฟเส้น (Network Bandwidth Analytics) ---
+        st.subheader("📈 Network Bandwidth Analytics: AI Optimization vs. Traditional")
         
-        # เพิ่มข้อมูลสำหรับเปรียบเทียบเข้าไปในประวัติ
         st.session_state.data_list.append({
             "Time": i, 
             "Users": current_user_count, 
@@ -107,11 +114,13 @@ for i in range(100):
             "Traditional Bandwidth (Fixed)": baseline
         })
         
-        # เก็บข้อมูลย้อนหลัง 20 จุดล่าสุดเพื่อความสวยงาม
         history_df = pd.DataFrame(st.session_state.data_list).tail(20)
         
-        # สร้างกราฟแท่งเปรียบเทียบ
-        st.bar_chart(history_df.set_index("Time")[["Adaptive AI Bandwidth", "Traditional Bandwidth (Fixed)"]], color=["#2e765e", "#b0bec5"])
+        # สร้างกราฟเส้นเปรียบเทียบ: AI (Green) vs Traditional (Orange)
+        st.line_chart(
+            history_df.set_index("Time")[["Adaptive AI Bandwidth", "Traditional Bandwidth (Fixed)"]], 
+            color=["#2e765e", "#ff9800"] # เปลี่ยนสีเทา (#b0bec5) เป็นสีส้ม (#ff9800)
+        )
         
         # --- ส่วนตาราง Live Logs ---
         st.subheader("👥 Live Network Access Logs")
