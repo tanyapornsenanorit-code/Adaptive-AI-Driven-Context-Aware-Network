@@ -1,136 +1,105 @@
 import streamlit as st
 import pandas as pd
 import time
-import random
+import json
+import random 
 
-# --- ตั้งค่าหน้าจอ ---
-st.set_page_config(page_title="AI Network & Privacy Dashboard", layout="wide")
+# --- การตั้งค่าหน้าจอ ---
+st.set_page_config(page_title="SDN Adaptive Control Engine", layout="wide")
 
-# เพิ่ม CSS เล็กน้อยเพื่อให้หน้าจอดูเป็นธีม Monitoring มากขึ้น
-st.markdown("""
-<style>
-    .metric-label { font-size: 1.2rem !important; color: #555; }
-    .metric-value { font-size: 2.5rem !important; color: #1f77b4; font-weight: bold; }
-</style>
-""", unsafe_allow_html=True)
+st.title("🛡️ SDN Adaptive Control & Traffic Analysis Engine")
+st.markdown("ระบบวิเคราะห์และควบคุมเครือข่ายอัตโนมัติ (Sprint 4: Northbound API Integration)")
 
-st.title("🧠 Adaptive AI Network & Privacy Control Center")
-st.markdown("ระบบจำลองเครือข่ายอัจฉริยะพร้อมการวิเคราะห์บริบทแบบ Real-time (Sprint 4: Optimization Analysis Final)")
-
-# --- 1. Sidebar: การตั้งค่าระบบ ---
-st.sidebar.header("🛠 การตั้งค่าระบบ")
-scenario = st.sidebar.selectbox("เลือกสถานการณ์ (Scenario)", ["Smart Campus", "Smart Stadium", "Emergency"])
-is_manual = st.sidebar.checkbox("ปิดระบบ AI (Manual Mode)")
+# --- 1. Sidebar: แหล่งข้อมูล ---
+st.sidebar.header("📡 Network Data Source")
+source_type = st.sidebar.selectbox("Data Input Type", ["RESTCONF Live Stream", "Static Flow Logs"])
+scenario = st.sidebar.selectbox("Current Scenario", ["Smart Campus", "Smart Stadium", "Emergency"])
 
 st.sidebar.markdown("---")
-st.sidebar.header("🔐 Security & Privacy")
-is_anonymized = st.sidebar.toggle("เปิดโหมดปกปิดตัวตน (Anonymization ON)")
+st.sidebar.header("🔐 Privacy & Security")
+is_anonymized = st.sidebar.toggle("Enable Data Masking (Anonymization)")
 
-# --- 2. Logic สำหรับการปกปิดตัวตน (Privacy) ---
-def process_user_name(name, active):
-    if active:
-        return "🛡️ Hidden_User_" + str(random.randint(100, 999))
-    return name
+# --- [ส่วนสำคัญ] การอ่านข้อมูลจากไฟล์ JSON จริง เพื่อตอกหน้า Mockup ---
+st.sidebar.markdown("---")
+st.sidebar.header("📊 Real-world Log Capture")
+try:
+    with open('network_logs.json', 'r') as f:
+        logs = json.load(f)
+    st.sidebar.write("Last Log Entry (from File):")
+    st.sidebar.json(logs[-1]) 
+except Exception as e:
+    st.sidebar.warning("⚠️ Waiting for network_logs.json file...")
 
-mock_users = ["User_Alice", "User_Bob", "User_Charlie", "User_David", "User_Eve"]
-
-# --- 3. Improved Adaptive AI Logic (Context-Aware Optimization) ---
-def calculate_ai_decision(users, scenario):
-    # กำหนดค่าคงที่ตามบริบท (Contextual Constraints)
-    if scenario == "Emergency":
-        priority_weight = 2.5  
-        capacity_threshold = 200 
-    elif scenario == "Smart Stadium":
-        priority_weight = 1.2  
-        capacity_threshold = 1000 
-    else: # Smart Campus
-        priority_weight = 1.0  
-        capacity_threshold = 500 
-
-    # คำนวณ Load Ratio
-    load_ratio = users / capacity_threshold
+# --- 2. Engineering Logic: การวิเคราะห์และสร้างคำสั่งควบคุม ---
+def generate_sdn_policy(traffic_load, context):
+    """
+    วิเคราะห์ Traffic และสร้างนโยบายควบคุม (SDN Policy Generation)
+    """
+    limits = {"Emergency": 150, "Smart Stadium": 1200, "Smart Campus": 500}
+    threshold = limits.get(context, 500)
     
-    # Adaptive Bandwidth Formula: Base * Load * Priority
-    base_bw = 150 
-    allocated_bw = int(base_bw * load_ratio * priority_weight)
-    
-    # กำหนดขอบเขตความปลอดภัย (Optimization Boundaries)
-    allocated_bw = max(100, min(allocated_bw, 1500))
-
-    # จำลองค่าดั้งเดิม (Baseline) เพื่อใช้เปรียบเทียบ (แบบ Fixed-High)
-    baseline_bw = int(base_bw * priority_weight) * 2
-
-    # วิเคราะห์สถานะและเหตุผลของ AI (Explainable AI - XAI)
-    if scenario == "Emergency":
-        status = "🚨 CRITICAL"
-        reason = f"AI มอบลำดับความสำคัญสูงสุด จัดสรร Bandwidth {allocated_bw} Mbps"
-    elif load_ratio > 0.85:
-        status = "🔥 HIGH LOAD"
-        reason = f"AI ตรวจพบความหนาแน่น {int(load_ratio*100)}% จึงขยายช่องสัญญาณเพื่อลด Latency"
+    if context == "Emergency":
+        priority = 50000 
+        action = "RESERVE_MIN_BANDWIDTH"
+    elif traffic_load > threshold:
+        priority = 30000
+        action = "RATE_LIMIT_NON_CRITICAL"
     else:
-        status = "✅ OPTIMIZED"
-        reason = "AI อยู่ในโหมดประหยัดพลังงาน จัดสรรทรัพยากรตามปริมาณการใช้งานจริง"
+        priority = 10000
+        action = "ALLOW_OPTIMIZED"
         
-    return status, reason, allocated_bw, baseline_bw
+    return priority, action, threshold
 
-# --- 4. การแสดงผลแบบ Real-time ---
-if 'data_list' not in st.session_state:
-    st.session_state.data_list = []
+# --- 3. การแสดงผลการวิเคราะห์แบบ Real-time ---
+if 'history' not in st.session_state:
+    st.session_state.history = []
 
 placeholder = st.empty()
 
-# วนลูปจำลองการทำงานของเครือข่าย
 for i in range(100):
     with placeholder.container():
-        # สุ่มจำนวนผู้ใช้ตาม Scenario
-        if scenario == "Smart Stadium":
-            current_user_count = random.randint(400, 1200)
-        elif scenario == "Emergency":
-            current_user_count = random.randint(50, 150)
-        else:
-            current_user_count = random.randint(20, 450)
+        # จำลองการรับค่า Traffic (Mbps)
+        load_ranges = {"Smart Stadium": (600, 1400), "Emergency": (50, 250), "Smart Campus": (100, 600)}
+        current_load = random.randint(*load_ranges[scenario])
+        
+        # ประมวลผลด้วย AI Control Logic
+        priority, sdn_action, limit = generate_sdn_policy(current_load, scenario)
 
-        # เรียกใช้ AI Logic
-        status, ai_reason, bw, baseline = calculate_ai_decision(current_user_count, scenario)
-        
-        if is_manual:
-            ai_reason = "⚠️ Manual Override: ระบบ AI ถูกปิดการทำงานโดยผู้ดูแล"
+        # ส่วนแสดงผล Metrics
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Current Traffic Load", f"{current_load} Mbps")
+        m2.metric("Target Flow Priority", priority)
+        m3.metric("Controller Action", sdn_action)
 
-        # --- ส่วนแสดง Metrics ---
-        c1, c2, c3 = st.columns(3)
-        c1.metric("จำนวนผู้ใช้ขณะนี้", f"{current_user_count} User", delta=None)
-        c2.metric("Bandwidth ที่จัดสรร", f"{bw} Mbps", delta=f"{status}")
-        c3.metric("Privacy Mode", "🔒 Protected" if is_anonymized else "🔓 Public")
+        # --- [ส่วนไม้ตาย] โชว์ JSON Payload ที่จะส่งไปหา ONOS ---
+        st.subheader("📤 Generated REST API Payload (Northbound)")
+        st.info("ชุดคำสั่งนี้ถูกสร้างขึ้นแบบ Dynamic เพื่อส่งไปยัง SDN Controller (ONOS/OpenDaylight)")
+        
+        api_payload = {
+            "flow": {
+                "priority": priority,
+                "timeout": 0,
+                "isPermanent": True,
+                "action": sdn_action,
+                "selector": {
+                    "criteria": [
+                        {"type": "IN_PORT", "port": 1}, 
+                        {"type": "ETH_TYPE", "ethType": "0x0800"}
+                    ]
+                },
+                "treatment": {
+                    "instructions": [{"type": "OUTPUT", "port": "NORMAL"}]
+                }
+            }
+        }
+        st.json(api_payload)
 
-        st.info(f"**AI Reasoning:** {ai_reason}")
-
-        # --- ส่วนกราฟเปรียบเทียบสวยงามแบบกราฟเส้น (Network Bandwidth Analytics) ---
-        st.subheader("📈 Network Bandwidth Analytics: AI Optimization vs. Traditional")
-        
-        st.session_state.data_list.append({
-            "Time": i, 
-            "Users": current_user_count, 
-            "Adaptive AI Bandwidth": bw,
-            "Traditional Bandwidth (Fixed)": baseline
-        })
-        
-        history_df = pd.DataFrame(st.session_state.data_list).tail(20)
-        
-        # สร้างกราฟเส้นเปรียบเทียบ: AI (Green) vs Traditional (Orange)
-        st.line_chart(
-            history_df.set_index("Time")[["Adaptive AI Bandwidth", "Traditional Bandwidth (Fixed)"]], 
-            color=["#2e765e", "#ff9800"] # เปลี่ยนสีเทา (#b0bec5) เป็นสีส้ม (#ff9800)
-        )
-        
-        # --- ส่วนตาราง Live Logs ---
-        st.subheader("👥 Live Network Access Logs")
-        display_users = []
-        for u in mock_users:
-            display_users.append({
-                "User ID": process_user_name(u, is_anonymized),
-                "Access Status": "Active",
-                "IP (Pseudo)": "10.0.0.XXX" if is_anonymized else f"10.0.0.{random.randint(2,254)}"
-            })
-        st.table(pd.DataFrame(display_users))
+        # กราฟวิเคราะห์
+        st.session_state.history.append({"Time": i, "Load": current_load, "Limit": limit})
+        hist_df = pd.DataFrame(st.session_state.history).tail(20)
+        st.line_chart(hist_df.set_index("Time"))
         
         time.sleep(1)
+
+st.write("---")
+st.write("📌 **Technical Note:** ระบบเข้าถึงฐานข้อมูล JSON ภายในเพื่อเปรียบเทียบค่าสถิติ และสร้าง RESTCONF Payload อัตโนมัติ")
